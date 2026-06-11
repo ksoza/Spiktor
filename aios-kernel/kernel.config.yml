@@ -1,0 +1,57 @@
+# aios-kernel/kernel.config.yml
+# AIOS Kernel configuration for Spiktor
+
+agents:
+  - id: spiktor-planner
+    priority: HIGH
+    max_tokens: 8000
+    memory_access: READ_WRITE
+
+  - id: spiktor-coder
+    priority: NORMAL
+    max_tokens: 16000
+    memory_access: READ_WRITE
+
+  - id: spiktor-critic
+    priority: NORMAL
+    max_tokens: 4000
+    memory_access: READ_ONLY
+
+  - id: spiktor-judge
+    priority: HIGH
+    max_tokens: 4000
+    memory_access: READ_ONLY
+
+  - id: spiktor-ops
+    priority: HIGH
+    max_tokens: 2000
+    memory_access: READ_WRITE
+
+  - id: ghostface
+    priority: LOW
+    max_tokens: 2000
+    memory_access: READ_WRITE
+    schedule: "0 * * * *"         # every hour
+
+scheduler:
+  max_concurrent: 5
+  context_switch_policy: PRIORITY_FIRST
+  queue_timeout_ms: 30000
+  preempt_low_priority: true
+
+memory:
+  backend: supabase                 # supabase | sqlite | postgres
+  working_memory_tokens: 32000
+  long_term_ttl_days: 30
+  vector_similarity_threshold: 0.75
+  auto_summarize_after_tokens: 24000
+
+storage:
+  backend: supabase_storage
+  default_bucket: spiktor-artifacts
+
+llm:
+  provider: anthropic
+  default_model: claude-sonnet-4-6
+  high_priority_model: claude-opus-4-6
+  low_priority_model: claude-haiku-4-5

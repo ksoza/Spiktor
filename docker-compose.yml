@@ -1,0 +1,333 @@
+version: "3.9"
+
+# Spiktor Neurogenetic Brain — Complete Stack
+# All repos. All capabilities. One compose file.
+
+services:
+
+  # ════════════════════════════════════════════════════════
+  # CORE AGENTIC OS
+  # ════════════════════════════════════════════════════════
+
+  aios-kernel:
+    build: { context: ./aios-kernel/AIOS }
+    container_name: spiktor-aios
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - AIOS_SCHEDULER_MAX_CONCURRENT=8
+      - SUPABASE_URL=${ELIZA_SUPABASE_URL}
+      - SUPABASE_KEY=${ELIZA_SUPABASE_KEY}
+    ports: ["8080:8080"]
+    volumes: [./aios-kernel/kernel.config.yml:/app/config/kernel.config.yml:ro, aios-data:/app/data]
+    healthcheck: { test: ["CMD","curl","-f","http://localhost:8080/health"], interval: 10s, retries: 5 }
+    networks: [spiktor-net]
+
+  github-mcp:
+    build: { context: ./github-mcp-server }
+    container_name: spiktor-github-mcp
+    restart: unless-stopped
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_TOOLSETS=repos,issues,pull_requests,actions,code_security,notifications,git,secret_protection
+    ports: ["8081:8081"]
+    healthcheck: { test: ["CMD","wget","-qO-","http://localhost:8081/health"], interval: 10s, retries: 5 }
+    networks: [spiktor-net]
+
+  pineal:
+    build: { context: ., dockerfile: brain/pineal/Dockerfile }
+    container_name: spiktor-pineal
+    restart: unless-stopped
+    environment:
+      - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - USE_REAL_CONNECTOME=${USE_REAL_CONNECTOME:-false}
+    ports: ["5000:5000"]
+    healthcheck: { test: ["CMD","curl","-f","http://localhost:5000/health"], interval: 10s, retries: 5 }
+    networks: [spiktor-net]
+    volumes: [pineal-data:/app/data]
+
+  eliza-runtime:
+    build: { context: ./eliza-runtime, target: runtime }
+    container_name: spiktor-eliza
+    restart: unless-stopped
+    depends_on:
+      aios-kernel:   { condition: service_healthy }
+      github-mcp:    { condition: service_healthy }
+      pineal:        { condition: service_healthy }
+      insforge:      { condition: service_healthy }
+    environment:
+      - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - ELIZA_SLACK_BOT_TOKEN=${ELIZA_SLACK_BOT_TOKEN}
+      - ELIZA_SLACK_APP_TOKEN=${ELIZA_SLACK_APP_TOKEN}
+      - ELIZA_SUPABASE_URL=${ELIZA_SUPABASE_URL}
+      - ELIZA_SUPABASE_KEY=${ELIZA_SUPABASE_KEY}
+      - AIOS_HOST=http://aios-kernel:8080
+      - GITHUB_MCP_HOST=http://github-mcp:8081
+      - PINEAL_HOST=http://pineal:5000
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - WHISPER_BACKEND=${WHISPER_BACKEND:-local}
+      - COMFYUI_HOST=http://comfyui:8188
+      - HYPERFRAMES_HOST=http://hyperframes:3080
+      - OPEN_GEN_AI_HOST=http://open-gen-ai:3000
+      - RUSTDESK_HOST=http://rustdesk-server:21114
+      - RUSTDESK_API_KEY=${RUSTDESK_API_KEY}
+      - INSFORGE_HOST=http://insforge:8090
+      - INSFORGE_TOKEN=${INSFORGE_TOKEN}
+      - AITOEARN_API_KEY=${AITOEARN_API_KEY}
+      - LIVESTREAM_BACKEND_URL=http://livestream-agent:5001
+      - CAMERA_SERVICE_URL=http://camera-eyes:5002
+      - INTEL_SERVICE_URL=http://intel-service:5003
+      - SKILLS_BASE_PATH=/app
+      - AGENTIC_OS_STRICT_GATES=true
+    volumes:
+      - ./eliza-integration:/app/spiktor-integration:ro
+      - ./brain:/app/brain:ro
+      - ./guardrails:/app/guardrails:ro
+      - ./agents:/app/agents:ro
+      - eliza-data:/app/data
+    command: bun run /app/spiktor-integration/start-runtime.ts
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # CAMERA EYES
+  # ════════════════════════════════════════════════════════
+
+  camera-eyes:
+    build:
+      context: .
+      dockerfile: camera/Dockerfile
+    container_name: spiktor-camera
+    restart: unless-stopped
+    environment:
+      - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - FRIGATE_HOST=http://frigate:5000
+      - ESPECTRE_HOST=http://espectre:8080
+      - HOME_ASSISTANT_URL=${HOME_ASSISTANT_URL}
+      - HOME_ASSISTANT_TOKEN=${HOME_ASSISTANT_TOKEN}
+      - CCAP_LIB_PATH=/usr/local/lib/libccap.so
+      - MOTION_THRESHOLD=500
+      - YOLO_CONFIDENCE=0.4
+      - CLAUDE_GATE_DELAY=3.0
+    ports: ["5002:5002"]
+    devices:
+      - /dev/video0:/dev/video0    # USB webcam passthrough
+      - /dev/video1:/dev/video1
+    volumes:
+      - ./camera:/app/camera:ro
+      - ./camera/ccap-bridge/libccap.so:/usr/local/lib/libccap.so:ro  # ccap compiled lib
+      - camera-data:/app/data
+    healthcheck: { test: ["CMD","curl","-f","http://localhost:5002/health"], interval: 15s, retries: 3 }
+    networks: [spiktor-net]
+
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: spiktor-frigate
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - FRIGATE_RTSP_PASSWORD=${CAMERA_RTSP_PASSWORD}
+    ports: ["5000:5000", "8554:8554", "8555:8555"]
+    volumes:
+      - ./camera/frigate-integration/frigate.yml:/config/config.yml:ro
+      - frigate-data:/media/frigate
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # INTELLIGENCE SERVICES
+  # ════════════════════════════════════════════════════════
+
+  intel-service:
+    build:
+      context: .
+      dockerfile: plugins/intel/Dockerfile
+    container_name: spiktor-intel
+    restart: unless-stopped
+    environment:
+      - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - ELIZA_SLACK_BOT_TOKEN=${ELIZA_SLACK_BOT_TOKEN}
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+      - ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+      - INTEL_SLACK_CHANNEL=${INTEL_SLACK_CHANNEL:-C0AMM97GSV9}
+    ports: ["5003:5003"]
+    networks: [spiktor-net]
+
+  livestream-agent:
+    build: { context: ./plugins/livestream/repo/backend }
+    container_name: spiktor-livestream
+    restart: unless-stopped
+    environment:
+      - LLM_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - LLM_MODEL=claude-haiku-4-5
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    ports: ["5001:5001"]
+    volumes: [livestream-data:/app/data]
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # GENERATION STACK
+  # ════════════════════════════════════════════════════════
+
+  hyperframes:
+    build: { context: ./plugins/hyperframes/repo }
+    container_name: spiktor-hyperframes
+    restart: unless-stopped
+    ports: ["3080:3080"]
+    volumes: [hyperframes-output:/app/output]
+    networks: [spiktor-net]
+
+  open-gen-ai:
+    build: { context: ./plugins/open-gen-ai/repo }
+    container_name: spiktor-open-gen
+    restart: unless-stopped
+    environment:
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_API_KEY}
+    ports: ["3090:3000"]
+    volumes: [open-gen-models:/app/models, open-gen-output:/app/output]
+    networks: [spiktor-net]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  comfyui:
+    build: { context: ./video/comfyui }
+    container_name: spiktor-comfyui
+    restart: unless-stopped
+    ports: ["8188:8188"]
+    volumes: [comfyui-models:/app/models, comfyui-output:/app/output]
+    networks: [spiktor-net]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  # ════════════════════════════════════════════════════════
+  # LLM STACK
+  # ════════════════════════════════════════════════════════
+
+  new-api:
+    image: calciumion/new-api:latest
+    container_name: spiktor-new-api
+    restart: unless-stopped
+    environment: [SQL_DSN=file:./data/one-api.db, SESSION_SECRET=${NEW_API_SESSION_SECRET}]
+    ports: ["3000:3000"]
+    volumes: [new-api-data:/app/data]
+    networks: [spiktor-net]
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: spiktor-vllm
+    restart: unless-stopped
+    runtime: nvidia
+    environment: [HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_API_KEY}]
+    command: >
+      --model Qwen/Qwen2.5-Coder-7B-Instruct
+      --quantization bitsandbytes
+      --port 8000
+    ports: ["8000:8000"]
+    volumes: [vllm-models:/root/.cache/huggingface]
+    networks: [spiktor-net]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  # ════════════════════════════════════════════════════════
+  # AGENTIC BACKEND
+  # ════════════════════════════════════════════════════════
+
+  insforge:
+    build: { context: ./plugins/insforge/repo }
+    container_name: spiktor-insforge
+    restart: unless-stopped
+    environment:
+      - INSFORGE_TOKEN=${INSFORGE_TOKEN}
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+    ports: ["8090:8090"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # for sandbox container management
+      - insforge-data:/app/data
+    healthcheck: { test: ["CMD","curl","-f","http://localhost:8090/health"], interval: 10s, retries: 5 }
+    networks: [spiktor-net]
+
+  goose:
+    image: ghcr.io/aaif-goose/goose:latest
+    container_name: spiktor-goose
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - GOOSE_PROVIDER=anthropic
+      - GOOSE_MODEL=claude-sonnet-4-6
+    volumes: [goose-data:/root/.config/goose]
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # REMOTE EYES
+  # ════════════════════════════════════════════════════════
+
+  rustdesk-server:
+    image: rustdesk/rustdesk-server:latest
+    container_name: spiktor-rustdesk
+    restart: unless-stopped
+    environment: [RUSTDESK_API_KEY=${RUSTDESK_API_KEY}]
+    ports: ["21114:21114", "21115:21115", "21116:21116/udp", "21117:21117"]
+    volumes: [rustdesk-data:/root]
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # OPS + MONITORING
+  # ════════════════════════════════════════════════════════
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: spiktor-n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+    ports: ["5678:5678"]
+    volumes: [n8n-data:/home/node/.n8n, ./n8n-workflows:/home/node/.n8n/workflows:ro]
+    networks: [spiktor-net]
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: spiktor-uptime
+    restart: unless-stopped
+    ports: ["3001:3001"]
+    volumes: [uptime-data:/app/data]
+    networks: [spiktor-net]
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: spiktor-pihole
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - WEBPASSWORD=${PIHOLE_PASSWORD}
+      - PIHOLE_DNS_=1.1.1.1;8.8.8.8
+    ports: ["53:53/tcp", "53:53/udp", "8085:80"]
+    volumes: [pihole-data:/etc/pihole, pihole-dnsmasq:/etc/dnsmasq.d]
+    networks: [spiktor-net]
+
+  postiz:
+    build: { context: ./ops/postiz }
+    container_name: spiktor-postiz
+    restart: unless-stopped
+    ports: ["4200:4200"]
+    networks: [spiktor-net]
+
+volumes:
+  aios-data: eliza-data: pineal-data: camera-data: frigate-data:
+  livestream-data: hyperframes-output: open-gen-models: open-gen-output:
+  comfyui-models: comfyui-output: new-api-data: vllm-models:
+  insforge-data: goose-data: rustdesk-data:
+  n8n-data: uptime-data: pihole-data: pihole-dnsmasq:
+
+networks:
+  spiktor-net:
+    driver: bridge

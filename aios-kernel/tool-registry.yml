@@ -1,0 +1,139 @@
+# aios-kernel/tool-registry.yml
+# All tools registered with the AIOS tool manager
+# Agents invoke these via AIOS_TOOL_CALL action
+
+tools:
+
+  # ── GitHub MCP Server (ksoza/github-mcp-server) ────────────────────────────
+  # Runs as Docker sidecar — native Go binary, zero per-call overhead
+  # All toolsets: repos, issues, PRs, actions, code_security, notifications,
+  #               git, discussions, labels, secret_protection, security_advisories
+  - id: github_mcp
+    type: mcp_sidecar
+    host: "${GITHUB_MCP_HOST}"
+    description: Full GitHub platform access via official MCP server
+    auth: GITHUB_TOKEN
+    toolsets:
+      - repos          # create/read/push files, branches, commits, releases
+      - issues         # create/read/update issues, sub-issues, labels
+      - pull_requests  # create/read/merge PRs, reviews, comments
+      - actions        # workflow runs, job logs, trigger workflows
+      - code_security  # code scanning alerts
+      - secret_protection  # secret scanning alerts
+      - notifications  # read/dismiss GitHub notifications
+      - git            # low-level git tree ops
+      - discussions    # GitHub discussions
+      - labels         # label management
+      - dependabot     # dependency alerts
+    write_gate: judge_approval_required  # all write ops need spiktor-judge approval
+
+  # ── GhOSTface Intelligence (ksoza/GhOSTface) ─────────────────────────────
+  - id: ghostface_repo_intel
+    type: eliza_action
+    action: GHOSTFACE_REPO_INTEL
+    description: Deep GitHub repo analysis — languages, README, contributors, AI brief
+
+  - id: ghostface_hf_search
+    type: eliza_action
+    action: GHOSTFACE_HF_SEARCH
+    description: Search 500K+ HuggingFace models + run live inference
+
+  - id: ghostface_code_brain
+    type: eliza_action
+    action: GHOSTFACE_CODE_BRAIN
+    description: Describe what you want → get production-ready code
+
+  - id: ghostface_memory_write
+    type: eliza_action
+    action: GHOSTFACE_MEMORY_WRITE
+    description: Store operator context, tech stack, repo knowledge
+
+  - id: ghostface_memory_read
+    type: eliza_action
+    action: GHOSTFACE_MEMORY_READ
+    description: Read from GhOSTface persistent memory bank
+
+  # ── Slack ─────────────────────────────────────────────────────────────────
+  - id: slack_post_message
+    type: mcp
+    server: https://mcp.slack.com/mcp
+    description: Post a message to a Slack channel
+    auth: SLACK_BOT_TOKEN
+
+  - id: slack_read_channel
+    type: mcp
+    server: https://mcp.slack.com/mcp
+    description: Read recent messages from a Slack channel
+    auth: SLACK_BOT_TOKEN
+
+  # ── Supabase ──────────────────────────────────────────────────────────────
+  - id: supabase_execute_sql
+    type: mcp
+    server: https://mcp.supabase.com/mcp
+    description: Run SQL against the Supabase database
+    auth: SUPABASE_KEY
+
+  - id: supabase_list_tables
+    type: mcp
+    server: https://mcp.supabase.com/mcp
+    description: List all tables in the database
+    auth: SUPABASE_KEY
+
+  # ── Vercel ────────────────────────────────────────────────────────────────
+  - id: vercel_deploy
+    type: mcp
+    server: https://mcp.vercel.com
+    description: Deploy a project to Vercel
+    auth: VERCEL_TOKEN
+
+  - id: vercel_get_logs
+    type: mcp
+    server: https://mcp.vercel.com
+    description: Get deployment logs
+    auth: VERCEL_TOKEN
+
+  # ── n8n workflows ─────────────────────────────────────────────────────────
+  - id: n8n_trigger_workflow
+    type: webhook
+    url: "${N8N_HOST}/webhook/{workflow_id}"
+    description: Trigger an n8n workflow by ID
+    method: POST
+
+  - id: n8n_list_workflows
+    type: rest
+    url: "${N8N_HOST}/api/v1/workflows"
+    description: List all n8n workflows
+    auth: N8N_API_KEY
+
+  # ── Google Drive ──────────────────────────────────────────────────────────
+  - id: gdrive_read_file
+    type: mcp
+    server: https://drivemcp.googleapis.com/mcp/v1
+    description: Read a file from Google Drive
+    auth: GOOGLE_OAUTH
+
+  - id: gdrive_create_file
+    type: mcp
+    server: https://drivemcp.googleapis.com/mcp/v1
+    description: Create a file in Google Drive
+    auth: GOOGLE_OAUTH
+
+  # ── Gmail ─────────────────────────────────────────────────────────────────
+  - id: gmail_search
+    type: mcp
+    server: https://gmailmcp.googleapis.com/mcp/v1
+    description: Search email threads
+    auth: GOOGLE_OAUTH
+
+  # ── Browserable ───────────────────────────────────────────────────────────
+  - id: web_navigate
+    type: rest
+    url: "http://browserable:3001/navigate"
+    description: Navigate to a URL and return page content
+    method: POST
+
+  - id: web_screenshot
+    type: rest
+    url: "http://browserable:3001/screenshot"
+    description: Take a screenshot of a URL
+    method: POST
