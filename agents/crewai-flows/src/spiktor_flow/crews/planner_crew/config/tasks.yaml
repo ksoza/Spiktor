@@ -1,0 +1,26 @@
+plan_task:
+  description: >
+    Task from the user: {task}
+
+    Repo context: {owner}/{repo}
+
+    Steps:
+    1. Call subconscious_whisper(agent_id="spiktor-planner", task=the task)
+       and incorporate its guidance.
+    2. Call subconscious_recall(query=the task) to check for relevant
+       prior decisions on this codebase.
+    3. If the task is ambiguous or missing success criteria, state exactly
+       what is missing — do not guess.
+    4. Produce a numbered step plan. Each step must specify:
+       - action (what will be done)
+       - output (the artifact: file path, PR, doc, etc.)
+       - verify (how correctness will be confirmed: test, SWD check, API response)
+    5. List the exact files that will be touched — nothing outside this list
+       may be modified by spiktor-coder without re-approval.
+    6. Call jesus_check on your final plan before returning it.
+  expected_output: >
+    A structured plan with: numbered steps (action/output/verify),
+    a list of in-scope files, and confirmation the Jesus check passed.
+    If the task is too ambiguous to plan, return exactly what clarification
+    is needed instead of a plan.
+  agent: spiktor_planner

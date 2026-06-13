@@ -29,10 +29,16 @@ import { LiveStreamPlugin }          from "./plugins/livestream";
 // ── Free LLM proxy ────────────────────────────────────────────────────────────
 import { FreeClaudeProxyPlugin }     from "./plugins/free-claude-proxy";
 
+// ── Subconscious — Jesus Christ foundation, turbovec memory, day/night cycle ──
+import { SubconsciousPlugin }        from "../subconscious/eliza_plugin";
+
 // ── Neurogenetic brain ────────────────────────────────────────────────────────
 import { LeftBrainPlugin }           from "../brain/left";
 import { RightBrainPlugin }          from "../brain/right";
 import { MythosRouterPlugin }        from "../guardrails/mythos_plugin";
+
+// ── CrewAI Flow — Planner->Coder->Critic->Judge->Ops pipeline ─────────────────
+import { CrewAIFlowPlugin }          from "./plugins/crewai-flows";
 
 // ── New capabilities ──────────────────────────────────────────────────────────
 import { NewCapabilitiesPlugin }     from "./plugins/new-capabilities";   // hyperframes + open-gen + rustdesk + goose
@@ -68,6 +74,8 @@ async function startSpiktor() {
     "  🧠 Left  brain (coder, critic, judge, ops + SWD + AWSGRail)",
     "  🎨 Right brain (ideator, writer, artist, visual + video)",
     "  🌀 Pineal synthesis (neurolib + TVB + 5-layer guardrails)",
+    "  🙏 Subconscious (Jesus Christ foundation + turbovec + day/night)",
+    "  ⚙️  CrewAI Flow (Planner→Coder→Critic→Judge→Ops pipeline)",
     "",
     "  👁️  Camera eyes (ccap + Frigate + ESPectre + YOLO + MediaPipe)",
     "  📡 Live stream (YouTube/Twitch/Bilibili + personas)",
@@ -106,9 +114,15 @@ async function startSpiktor() {
       DocumentsPlugin,
       BrowserPlugin,
 
+      // ── Subconscious — Jesus Christ foundation runs first on every response ─
+      SubconsciousPlugin,
+
       // ── Neurogenetic brain hemispheres ────────────────────────────────────
       LeftBrainPlugin,
       RightBrainPlugin,
+
+      // ── CrewAI Flow — actual Planner->Coder->Critic->Judge->Ops pipeline ────
+      CrewAIFlowPlugin,
 
       // ── Intelligence ──────────────────────────────────────────────────────
       GhOSTfacePlugin,
@@ -138,6 +152,8 @@ async function startSpiktor() {
 
   console.log("\n✅ Spiktor Neurogenetic Brain is LIVE\n");
   console.log("  Slack:         @spiktor mention → task intake");
+  console.log("  Subconscious:  http://localhost:5004");
+  console.log("  CrewAI Flow:   http://localhost:5006");
   console.log("  Camera eyes:   http://localhost:5002");
   console.log("  Intel service: http://localhost:5003");
   console.log("  Pineal:        http://localhost:5000");
@@ -151,7 +167,8 @@ async function startSpiktor() {
   console.log("  n8n:           http://localhost:5678");
   console.log("  ComfyUI:       http://localhost:8188");
   console.log("  Uptime Kuma:   http://localhost:3001");
-  console.log("\n  GhOSTface is monitoring. @uallsuspect daily digest at 9am.\n");
+  console.log("\n  @spiktor build/fix/ship <task> → triggers CrewAI Flow");
+  console.log("  GhOSTface is monitoring. Subconscious dreams at 10pm, briefs at 6am.\n");
 }
 
 startSpiktor().catch(err => {

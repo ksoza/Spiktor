@@ -1,0 +1,24 @@
+review_step:
+  description: >
+    Original plan step: {step_description}
+    Scope (allowed files): {scope_files}
+
+    Coder's report of what was done:
+    {coder_output}
+
+    Steps:
+    1. Call subconscious_whisper(agent_id="spiktor-critic", task="reviewing: " + step description).
+    2. Check correctness: does the implementation match the step's intent?
+    3. Check scope: were only files in scope_files touched? Any drift is a FIX.
+    4. Check security: any secrets, credentials, or unsafe patterns introduced?
+    5. Check style: does it match the conventions visible in the SWD output / repo?
+    6. Check SWD result from coder's report — if it shows unresolved
+       "NOT FOUND" entries, that is an automatic FIX.
+    7. Call jesus_check on your review verdict before finalizing.
+  expected_output: >
+    A verdict of PASS, FIX, or ESCALATE, followed by a numbered list of
+    AT LEAST 3 specific things checked (with findings for each).
+    If FIX: list exact corrections needed, specific enough for spiktor-coder
+    to act on without further clarification.
+    If ESCALATE: state the specific security/scope/IP concern for @uallsuspect.
+  agent: spiktor_critic

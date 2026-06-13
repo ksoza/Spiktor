@@ -55,6 +55,8 @@ services:
       github-mcp:    { condition: service_healthy }
       pineal:        { condition: service_healthy }
       insforge:      { condition: service_healthy }
+      subconscious:  { condition: service_healthy }
+      crewai-flow:   { condition: service_healthy }
     environment:
       - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
       - ELIZA_SLACK_BOT_TOKEN=${ELIZA_SLACK_BOT_TOKEN}
@@ -64,6 +66,8 @@ services:
       - AIOS_HOST=http://aios-kernel:8080
       - GITHUB_MCP_HOST=http://github-mcp:8081
       - PINEAL_HOST=http://pineal:5000
+      - SUBCONSCIOUS_HOST=http://subconscious:5004
+      - CREWAI_FLOW_HOST=http://crewai-flow:5006
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
       - WHISPER_BACKEND=${WHISPER_BACKEND:-local}
@@ -87,6 +91,62 @@ services:
       - ./agents:/app/agents:ro
       - eliza-data:/app/data
     command: bun run /app/spiktor-integration/start-runtime.ts
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # SUBCONSCIOUS — belief system, turbovec memory, day/night cycle
+  # ════════════════════════════════════════════════════════
+
+  subconscious:
+    build: { context: ./subconscious }
+    container_name: spiktor-subconscious
+    restart: unless-stopped
+    environment:
+      - ELIZA_ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - ELIZA_SLACK_BOT_TOKEN=${ELIZA_SLACK_BOT_TOKEN}
+      - INTEL_SLACK_CHANNEL=${INTEL_SLACK_CHANNEL}
+      - SUBCONSCIOUS_API_KEY=${SUBCONSCIOUS_API_KEY}
+      - LETTA_API_KEY=${LETTA_API_KEY}
+      - TURBOVEC_BASE_PATH=/app/data/turbovec
+      - TURBOVEC_DIM=1536
+      - TURBOVEC_BITS=4
+      - DAY_START_HOUR=6
+      - NIGHT_START_HOUR=22
+    ports: ["5004:5004"]
+    volumes:
+      - subconscious-data:/app/data
+      - ./turbovec:/app/turbovec-src:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [spiktor-net]
+
+  # ════════════════════════════════════════════════════════
+  # CREWAI FLOW — Planner -> Coder -> Critic -> Judge -> Ops
+  # ════════════════════════════════════════════════════════
+
+  crewai-flow:
+    build: { context: ./agents/crewai-flows }
+    container_name: spiktor-crewai-flow
+    restart: unless-stopped
+    depends_on:
+      subconscious: { condition: service_healthy }
+      github-mcp:   { condition: service_healthy }
+    environment:
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - SUBCONSCIOUS_HOST=http://subconscious:5004
+      - GITHUB_MCP_HOST=http://github-mcp:8081
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - ELIZA_SLACK_BOT_TOKEN=${ELIZA_SLACK_BOT_TOKEN}
+      - INTEL_SLACK_CHANNEL=${INTEL_SLACK_CHANNEL}
+    ports: ["5006:5006"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks: [spiktor-net]
 
   # ════════════════════════════════════════════════════════
@@ -214,7 +274,9 @@ services:
     image: calciumion/new-api:latest
     container_name: spiktor-new-api
     restart: unless-stopped
-    environment: [SQL_DSN=file:./data/one-api.db, SESSION_SECRET=${NEW_API_SESSION_SECRET}]
+    environment:
+      - SQL_DSN=file:./data/one-api.db
+      - SESSION_SECRET=${NEW_API_SESSION_SECRET}
     ports: ["3000:3000"]
     volumes: [new-api-data:/app/data]
     networks: [spiktor-net]
@@ -224,7 +286,8 @@ services:
     container_name: spiktor-vllm
     restart: unless-stopped
     runtime: nvidia
-    environment: [HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_API_KEY}]
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_API_KEY}
     command: >
       --model Qwen/Qwen2.5-Coder-7B-Instruct
       --quantization bitsandbytes
@@ -274,7 +337,8 @@ services:
     image: rustdesk/rustdesk-server:latest
     container_name: spiktor-rustdesk
     restart: unless-stopped
-    environment: [RUSTDESK_API_KEY=${RUSTDESK_API_KEY}]
+    environment:
+      - RUSTDESK_API_KEY=${RUSTDESK_API_KEY}
     ports: ["21114:21114", "21115:21115", "21116:21116/udp", "21117:21117"]
     volumes: [rustdesk-data:/root]
     networks: [spiktor-net]
@@ -322,11 +386,27 @@ services:
     networks: [spiktor-net]
 
 volumes:
-  aios-data: eliza-data: pineal-data: camera-data: frigate-data:
-  livestream-data: hyperframes-output: open-gen-models: open-gen-output:
-  comfyui-models: comfyui-output: new-api-data: vllm-models:
-  insforge-data: goose-data: rustdesk-data:
-  n8n-data: uptime-data: pihole-data: pihole-dnsmasq:
+  aios-data:
+  eliza-data:
+  pineal-data:
+  camera-data:
+  frigate-data:
+  livestream-data:
+  hyperframes-output:
+  open-gen-models:
+  open-gen-output:
+  comfyui-models:
+  comfyui-output:
+  new-api-data:
+  vllm-models:
+  insforge-data:
+  goose-data:
+  rustdesk-data:
+  subconscious-data:
+  n8n-data:
+  uptime-data:
+  pihole-data:
+  pihole-dnsmasq:
 
 networks:
   spiktor-net:

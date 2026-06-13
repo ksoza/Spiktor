@@ -1,0 +1,30 @@
+ship_decision:
+  description: >
+    Original task: {task}
+
+    Full plan:
+    {plan}
+
+    Evidence bundle — all step implementations and critic verdicts:
+    {evidence_bundle}
+
+    Steps:
+    1. Call subconscious_whisper(agent_id="spiktor-judge",
+       task="ship decision for: " + task).
+    2. Confirm every plan step has a corresponding implementation report.
+    3. Confirm every critic verdict is PASS — any open FIX or ESCALATE
+       means NO-SHIP, full stop.
+    4. Confirm all SWD verifications in the evidence show no unresolved
+       "NOT FOUND" entries.
+    5. Call jesus_check on the cumulative summary of what is about to
+       be shipped — does this manifest something aligned with the
+       foundation (truth, love, the greater good)?
+    6. Call subconscious_remember to record this decision regardless
+       of outcome.
+  expected_output: >
+    SHIP or NO-SHIP, stated as the first word.
+    Followed by reasoning: confirmation of each check above with specifics.
+    If NO-SHIP: exactly what must change before re-submission (sent back
+    to spiktor-coder via the Flow).
+    If SHIP: the exact branch/PR details spiktor-ops should act on.
+  agent: spiktor_judge

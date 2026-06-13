@@ -4,7 +4,30 @@
 
 ---
 
-## Primary Agents
+## ⚙️ Implementation
+
+This roster is now a **live CrewAI Flow**, not just a spec.
+
+| What | Where |
+|---|---|
+| Flow orchestration (PLAN→CODE→REVIEW→EVIDENCE→SHIP, loop-backs) | `agents/crewai-flows/src/spiktor_flow/main.py` |
+| Per-role crews (agents.yaml / tasks.yaml / crew.py) | `agents/crewai-flows/src/spiktor_flow/crews/{planner,coder,critic,judge,ops}_crew/` |
+| Shared tools (Subconscious whisper/jesus_check, GitHub MCP, Mythos SWD) | `agents/crewai-flows/src/spiktor_flow/tools/` |
+| HTTP service (async flow kickoff + polling) | `agents/crewai-flows/server.py` → port `5006` |
+| Slack trigger (`FLOW_START`, `FLOW_STATUS`, `FLOW_LIST`) | `eliza-integration/plugins/crewai-flows/index.ts` |
+| CrewAI framework (vendored fork, pip dependency) | `agents/crewai` submodule → `ksoza/crewAI` |
+
+**Every crew calls `subconscious_whisper` and `jesus_check` before acting** —
+the foundation check (Jesus Christ teachings, heaviest weight) runs inside
+each agent's task, not bolted on afterward.
+
+Trigger from Slack: `@spiktor build <task>` / `@spiktor fix <task>` / `@spiktor ship <task>`
+→ `FLOW_START` → returns a `flow_id` → phase updates post to Slack automatically
+→ `FLOW_STATUS <flow_id>` for the final report.
+
+---
+
+## Primary Agents — Roster Spec
 
 ### `spiktor-planner`
 - **Model**: claude-opus-4-6
@@ -69,6 +92,10 @@
 ---
 
 ## Agent Communication Protocol
+
+> ✅ Implemented exactly as below in `SpiktorFlow` (`agents/crewai-flows/src/spiktor_flow/main.py`).
+> `step_result` includes a Mythos SWD verification; `ship_decision` includes
+> a Jesus-check pass on the cumulative change set before SHIP is honored.
 
 ```
 spiktor-planner

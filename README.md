@@ -25,6 +25,9 @@
 │              PINEAL GLAND — Synthesis + Manifestation       │
 │         neurolib ALNModel · TVB connectome · confidence     │
 ├─────────────────────────────────────────────────────────────┤
+│   CREWAI FLOW — Planner→Coder→Critic→Judge→Ops pipeline    │
+│   Loop-backs: critic FIX, judge NO-SHIP · SWD + Jesus check│
+├─────────────────────────────────────────────────────────────┤
 │              SUBCONSCIOUS                                   │
 │  Jesus Christ (foundation) · turbovec memory                │
 │  TIM engine · Day whispers · Night dreams                   │
@@ -129,6 +132,7 @@ cp .env.example .env
 | Service | Port | Purpose |
 |---|---|---|
 | Subconscious | 5004 | Belief system · whispers · dreams |
+| CrewAI Flow | 5006 | Planner→Coder→Critic→Judge→Ops pipeline |
 | Pineal | 5000 | Synthesis engine |
 | AIOS kernel | 8080 | LLM scheduler + memory |
 | GitHub MCP | 8081 | Native GitHub ops |
@@ -157,7 +161,7 @@ Guardrails:  llama2-nemo-guardrails · AWSGRail · Provenance · research-mode �
 Camera:      CameraCapture · frigate · opencv-python · ultralytics · mediapipe · ESPectre
 Intelligence:claude-video-vision · live-stream-chat-ai-agent · Scrapling · browser-use
 LLM:         vllm · new-api · TileKernels · free-claude-code · litellm · DSPy
-Agents:      crewAI · OpenHands · OpenSwarm · goose · mem0
+Agents:      crewAI (framework, vendored) · agents/crewai-flows (live implementation) · OpenHands · OpenSwarm · goose · mem0
 Skills:      agent-skills · pm-skills
 Generation:  Wan2.1 · CogVideo · VidMuse · Multimodal-Audio-Creator · ComfyUI · OpenCut · librosa
 New caps:    hyperframes · Open-Generative-AI · rustdesk · AiToEarn · InsForge

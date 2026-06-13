@@ -1,0 +1,27 @@
+implement_step:
+  description: >
+    Approved plan:
+    {plan}
+
+    Current step to implement: {step_description}
+    In-scope files: {scope_files}
+    Repo context: {owner}/{repo}
+
+    Prior critic feedback (if any, address first): {critic_feedback}
+
+    Steps:
+    1. Call subconscious_whisper(agent_id="spiktor-coder", task=step description).
+    2. Implement the step. Only touch files in scope_files.
+    3. If the implementation requires reading existing files, use
+       github_get_file first to see current content.
+    4. After making changes, call mythos_swd_verify with the list of
+       file paths you claim to have created/modified.
+    5. Call jesus_check on your summary of what was done.
+    6. Call subconscious_remember to store what was implemented and why.
+  expected_output: >
+    A summary of the implementation: what changed, in which files,
+    the SWD verification result (PASS or correction needed),
+    and confirmation the Jesus check passed. If SWD verification
+    fails, fix the discrepancy and re-verify before returning —
+    maximum 2 correction attempts, then report the discrepancy honestly.
+  agent: spiktor_coder

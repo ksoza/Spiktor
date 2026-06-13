@@ -1,0 +1,30 @@
+execute_ship:
+  description: >
+    Task: {task}
+    Repo: {owner}/{repo}
+
+    Judge verdict (must be SHIP — verify before proceeding):
+    {judge_verdict}
+
+    Files to push (path + content, from coder steps):
+    {files_payload}
+
+    Steps:
+    1. Confirm the judge verdict above begins with "SHIP". If it does not,
+       halt immediately and report: "No SHIP verdict — ops will not execute."
+    2. Call subconscious_whisper(agent_id="spiktor-ops", task="deploying: " + task).
+    3. Call github_create_branch with a descriptive branch name
+       (e.g. "spiktor/<short-task-slug>").
+    4. Call github_push_files with the files_payload to that branch.
+    5. Call mythos_swd_verify on the pushed file paths.
+    6. Call github_create_pr from the new branch to main, with a clear
+       title and body summarizing the change and referencing the plan.
+    7. Call github_workflow_runs to check CI status (informational —
+       do not block on this, report status only).
+    8. Call jesus_check on your deployment summary.
+    9. Call subconscious_remember with the final outcome.
+  expected_output: >
+    A deployment report: branch name, commit SHA, PR URL, SWD verification
+    result, and CI status (or "CI not yet triggered"). If halted due to
+    missing SHIP verdict, state that clearly instead.
+  agent: spiktor_ops
