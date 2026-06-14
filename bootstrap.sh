@@ -29,6 +29,11 @@ echo "→ Neurogenetic brain"
 add neurolib         brain/neurolib
 add tvb-root         brain/tvb
 
+echo "→ Subconscious"
+add turbovec            turbovec
+add claude-subconscious subconscious/claude-sub
+add subconscious        subconscious/tim
+
 echo "→ Guardrails"
 add llama2-nemo-guardrails guardrails/nemo
 add AWSGRail                guardrails/awsgrail
@@ -46,7 +51,7 @@ add ESPectre         camera/espectre
 
 echo "→ Intelligence"
 add claude-video-vision     plugins/video-vision
-add live-stream-chat-ai-agent plugins/livestream/repo
+add live-stream-chat-ai-agent plugins/livestream
 add Scrapling                tools/scrapling
 add browser-use              tools/browser-use
 
@@ -70,8 +75,8 @@ add agent-skills     agents/agent-skills
 add pm-skills        agents/pm-skills
 
 echo "→ Generation"
-add hyperframes      plugins/hyperframes/repo
-add Open-Generative-AI plugins/open-gen-ai/repo
+add hyperframes      plugins/hyperframes
+add Open-Generative-AI plugins/open-gen-ai
 add Wan2.1           video/wan2
 add CogVideo         video/cogvideo
 add VidMuse          video/vidmuse
@@ -81,11 +86,11 @@ add OpenCut          video/opencut
 add librosa          video/librosa
 
 echo "→ Social + distribution"
-add AiToEarn         plugins/aitoearn/repo
+add AiToEarn         plugins/aitoearn
 add postiz-app       ops/postiz
 
 echo "→ Backend + ops"
-add InsForge         plugins/insforge/repo
+add InsForge         plugins/insforge
 add rustdesk         tools/rustdesk
 add uptime-kuma      ops/uptime-kuma
 add pi-hole          ops/pihole
@@ -100,7 +105,6 @@ echo "→ Reference + governance"
 add claude-code                 plugins/claude-code
 add claude-code-best-practice   governance/best-practice
 add andrej-karpathy-skills      governance/karpathy-skills
-add FinceptTerminal             tools/fincept
 
 git submodule update --init --recursive
 echo -e "\n${G}✓ All submodules initialized${X}"
