@@ -88,6 +88,7 @@ services:
       - ./eliza-integration:/app/spiktor-integration:ro
       - ./brain:/app/brain:ro
       - ./guardrails:/app/guardrails:ro
+      - ./subconscious:/app/subconscious:ro
       - ./agents:/app/agents:ro
       - eliza-data:/app/data
     command: bun run /app/spiktor-integration/start-runtime.ts
@@ -98,7 +99,7 @@ services:
   # ════════════════════════════════════════════════════════
 
   subconscious:
-    build: { context: ./subconscious }
+    build: { context: ., dockerfile: subconscious/Dockerfile }
     container_name: spiktor-subconscious
     restart: unless-stopped
     environment:
@@ -187,7 +188,7 @@ services:
     privileged: true
     environment:
       - FRIGATE_RTSP_PASSWORD=${CAMERA_RTSP_PASSWORD}
-    ports: ["5000:5000", "8554:8554", "8555:8555"]
+    ports: ["5008:5000", "8554:8554", "8555:8555"]  # 5000 was colliding with pineal; container port unchanged so FRIGATE_HOST=http://frigate:5000 (internal) is unaffected. Verify 5000 vs 8971 against your Frigate version's docs.
     volumes:
       - ./camera/frigate-integration/frigate.yml:/config/config.yml:ro
       - frigate-data:/media/frigate
@@ -200,7 +201,7 @@ services:
   intel-service:
     build:
       context: .
-      dockerfile: plugins/intel/Dockerfile
+      dockerfile: eliza-integration/plugins/intel/Dockerfile
     container_name: spiktor-intel
     restart: unless-stopped
     environment:
@@ -214,7 +215,7 @@ services:
     networks: [spiktor-net]
 
   livestream-agent:
-    build: { context: ./plugins/livestream/repo/backend }
+    build: { context: ./plugins/livestream/backend }
     container_name: spiktor-livestream
     restart: unless-stopped
     environment:
@@ -233,7 +234,7 @@ services:
   # ════════════════════════════════════════════════════════
 
   hyperframes:
-    build: { context: ./plugins/hyperframes/repo }
+    build: { context: ./plugins/hyperframes }
     container_name: spiktor-hyperframes
     restart: unless-stopped
     ports: ["3080:3080"]
@@ -241,7 +242,7 @@ services:
     networks: [spiktor-net]
 
   open-gen-ai:
-    build: { context: ./plugins/open-gen-ai/repo }
+    build: { context: ./plugins/open-gen-ai }
     container_name: spiktor-open-gen
     restart: unless-stopped
     environment:
@@ -305,7 +306,7 @@ services:
   # ════════════════════════════════════════════════════════
 
   insforge:
-    build: { context: ./plugins/insforge/repo }
+    build: { context: ./plugins/insforge }
     container_name: spiktor-insforge
     restart: unless-stopped
     environment:
