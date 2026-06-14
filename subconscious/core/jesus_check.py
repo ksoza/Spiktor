@@ -81,7 +81,10 @@ def run_jesus_check(content: str, context: str = "") -> JesusCheckResult:
         pass_hits   = [s for s in q["pass_signal"]   if s in content_lower]
 
         # Review if review signals present AND no pass signals counter them
-        needs_review = len(review_hits) > 0 and len(pass_hits) == 0
+        # Any review signal flags for revision — a co-occurring pass-signal word
+        # elsewhere in the same text (e.g. "benefit") must not cancel out a
+        # detected concern (e.g. "harm"). Erring toward more scrutiny is correct.
+        needs_review = len(review_hits) > 0
 
         checks.append({
             "id":           q["id"],
