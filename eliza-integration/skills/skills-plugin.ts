@@ -48,6 +48,7 @@ const AGENT_SKILL_COMMANDS: Record<string, string> = {
   "/test":         "test",
   "/review":       "review",
   "/code-simplify":"code-simplify",
+  "/simplify":     "code-simplify",   // alias — ponytail's framing of /code-simplify
   "/ship":         "ship",
 };
 
@@ -62,19 +63,38 @@ const PM_SKILL_COMMANDS: Record<string, string> = {
   "/retrospect":  "retro",
 };
 
+// Ponytail (ksoza/ponytail, fork of DietrichGebert/ponytail) — "the lazy senior
+// dev": before writing code, stop at the first rung that holds. Applied as a
+// standing constraint on every engineering skill, not a separate workflow —
+// minimalism is a lens on /spec /plan /build /test /review /ship, not a phase
+// of its own.
+const PONYTAIL_LADDER = `Before adding any code, climb down this ladder and stop at the first rung that holds:
+1. Is this needed at all? If not, leave it out.
+2. Does the standard library already do it? Use that.
+3. Does the platform/runtime already provide it natively? Use that.
+4. Is there an already-installed dependency that covers it? Use that.
+5. Can it be done in one line? Do that.
+6. Only if none of the above hold: write the smallest implementation that works.
+Mark any shortcut taken with a brief comment naming what it skips and what the
+upgrade path would be. This is about laziness, not negligence: input validation,
+data-loss handling, security, and accessibility are never skipped.`;
+
 async function runSkillWorkflow(
-  skill:   string,
-  task:    string,
-  context: string,
-  skillDir: string
+  skill:        string,
+  task:         string,
+  context:      string,
+  skillDir:     string,
+  applyPonytail: boolean = false
 ): Promise<string> {
   // Load skill markdown file
   const skillFile = path.join(skillDir, `${skill}.md`);
   const skillDef  = loadSkillFile(skillFile);
 
+  const ladderPrefix = applyPonytail ? `${PONYTAIL_LADDER}\n\n---\n\n` : "";
+
   const prompt = skillDef
-    ? `${skillDef}\n\n---\n\nApply the above skill to this task:\n${task}\n\nContext: ${context}`
-    : `Apply the "${skill}" skill to this task:\n${task}\n\nContext: ${context}`;
+    ? `${ladderPrefix}${skillDef}\n\n---\n\nApply the above skill to this task:\n${task}\n\nContext: ${context}`
+    : `${ladderPrefix}Apply the "${skill}" skill to this task:\n${task}\n\nContext: ${context}`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -99,7 +119,10 @@ const EngineeringSkillAction: Action = {
   name: "AGENT_SKILL",
   description:
     "Run a production engineering skill from ksoza/agent-skills. " +
-    "Commands: /spec /plan /build /test /review /code-simplify /ship. " +
+    "Commands: /spec /plan /build /test /review /code-simplify (/simplify) /ship. " +
+    "Every command applies the ponytail minimalism ladder (ksoza/ponytail) first — " +
+    "stop at the first rung that holds: unneeded, stdlib, native, existing dependency, " +
+    "one line, then minimum implementation. " +
     "Each activates the right quality gates and workflows for that phase.",
   validate: async (_rt, msg) => {
     const text = msg.content.text ?? "";
@@ -112,7 +135,7 @@ const EngineeringSkillAction: Action = {
     const task    = text.replace(cmdKey, "").trim();
     const context = (opts as any)?.context ?? "";
 
-    const result = await runSkillWorkflow(skill, task, context, getSkillsDir("agent"));
+    const result = await runSkillWorkflow(skill, task, context, getSkillsDir("agent"), true);
     return {
       text: `**[Agent Skill: ${cmdKey}]**\n\n${result}`,
       data: { skill, command: cmdKey, task }
@@ -198,9 +221,13 @@ const SkillListAction: Action = {
       "**PM skills (ksoza/pm-skills):**",
       Object.entries(PM_SKILL_COMMANDS).map(([cmd, s]) => `  ${cmd} → ${s}`).join("\n"),
       "",
+      "**Standing lens (ksoza/ponytail):** minimalism ladder applied to every " +
+        "engineering skill above — unneeded → stdlib → native → existing dep → " +
+        "one line → minimum implementation.",
+      "",
       "Auto-activates based on task context — no explicit invocation needed."
     ].join("\n"),
-    data: { agentSkills: AGENT_SKILL_COMMANDS, pmSkills: PM_SKILL_COMMANDS }
+    data: { agentSkills: AGENT_SKILL_COMMANDS, pmSkills: PM_SKILL_COMMANDS, ponytail: true }
   }),
   examples: []
 };
@@ -211,7 +238,8 @@ export const SkillsPlugin: Plugin = {
   name: "agent-pm-skills",
   description:
     "Engineering + PM skill frameworks. " +
-    "ksoza/agent-skills (Addy Osmani) + ksoza/pm-skills (68 PM skills). " +
+    "ksoza/agent-skills (Addy Osmani) + ksoza/pm-skills (68 PM skills) + " +
+    "ksoza/ponytail (minimalism ladder, applied to every engineering skill). " +
     "Auto-activates, upgrades spiktor-coder and spiktor-planner.",
   providers: [SkillAutoActivateProvider],
   actions: [EngineeringSkillAction, PMSkillAction, SkillListAction],

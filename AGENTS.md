@@ -46,6 +46,7 @@ Trigger from Slack: `@spiktor build <task>` / `@spiktor fix <task>` / `@spiktor 
 - **Outputs**: code changes, new files, test results
 - **Plugin dependencies**: plugin-browser (docs lookup), plugin-sql (memory write)
 - **Scope rule**: only touch files listed in plan. Any out-of-scope change requires planner re-approval.
+- **Standing lens**: ponytail minimalism ladder (ksoza/ponytail) applied before any code is written — stop at the first rung that holds: unneeded → stdlib → native → installed dep → one line → minimum implementation.
 
 ---
 

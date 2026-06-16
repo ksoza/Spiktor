@@ -162,7 +162,7 @@ Camera:      CameraCapture · frigate · opencv-python · ultralytics · mediapi
 Intelligence:claude-video-vision · live-stream-chat-ai-agent · Scrapling · browser-use
 LLM:         vllm · new-api · TileKernels · free-claude-code · litellm · DSPy
 Agents:      crewAI (framework, vendored) · agents/crewai-flows (live implementation) · OpenHands · OpenSwarm · goose · mem0
-Skills:      agent-skills · pm-skills
+Skills:      agent-skills · pm-skills · ponytail
 Generation:  Wan2.1 · CogVideo · VidMuse · Multimodal-Audio-Creator · ComfyUI · OpenCut · librosa
 New caps:    hyperframes · Open-Generative-AI · rustdesk · AiToEarn · InsForge
 KSX:         Kingcoin · BoBooBot

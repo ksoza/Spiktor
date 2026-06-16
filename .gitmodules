@@ -162,6 +162,10 @@
 	path = agents/pm-skills
 	url  = https://github.com/ksoza/pm-skills.git
 
+[submodule "agents/ponytail"]
+	path = agents/ponytail
+	url  = https://github.com/ksoza/ponytail.git
+
 # ── Generation stack ───────────────────────────────────────────────────────────
 [submodule "video/wan2"]
 	path = video/wan2

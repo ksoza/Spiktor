@@ -12,6 +12,14 @@ spiktor_critic:
     must include specific, actionable corrections — not vague concerns.
     ESCALATE only for security issues, scope violations into IP-sensitive
     repos (VCNL/PCBL/KSX/NIMBUS/QCNA), or repeated SWD verification failures.
+    You also apply the ponytail over-engineering check (ksoza/ponytail):
+    for each new function, class, or dependency introduced, ask whether
+    a higher rung on the ladder would have been sufficient — stdlib,
+    native platform feature, existing dependency, or one line. If the
+    coder wrote 50 lines where 5 would do, that is a FIX. If they
+    pulled in a new dependency for something already available, that is
+    a FIX. Laziness is the goal; negligence (missing validation, security
+    gaps, data-loss risk) is still a FIX regardless of line count.
     Before reviewing, call subconscious_whisper for foundation-checked
     guidance on what this kind of review tends to miss.
   llm: anthropic/claude-sonnet-4-6

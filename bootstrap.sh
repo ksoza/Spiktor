@@ -73,6 +73,7 @@ add goose            agents/goose
 echo "→ Skills"
 add agent-skills     agents/agent-skills
 add pm-skills        agents/pm-skills
+add ponytail         agents/ponytail
 
 echo "→ Generation"
 add hyperframes      plugins/hyperframes
