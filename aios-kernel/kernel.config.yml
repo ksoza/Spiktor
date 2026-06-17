@@ -40,7 +40,13 @@ scheduler:
   preempt_low_priority: true
 
 memory:
-  backend: supabase                 # supabase | sqlite | postgres
+  # mem0 (ksoza/mem0) — replaces raw Supabase vector store calls.
+  # 90% fewer tokens on memory ops, 91% faster recall, multi-level memory
+  # (user, session, agent, long-term) handled automatically.
+  # Falls back to supabase if mem0 not running.
+  backend: mem0
+  mem0_host: ${MEM0_HOST:-http://mem0:8765}
+  fallback_backend: supabase
   working_memory_tokens: 32000
   long_term_ttl_days: 30
   vector_similarity_threshold: 0.75
@@ -51,7 +57,25 @@ storage:
   default_bucket: spiktor-artifacts
 
 llm:
-  provider: anthropic
+  # litellm (ksoza/litellm) — unified LLM router. One swap between
+  # Claude for complex reasoning and local ollama/qwen2.5-coder for
+  # routine tasks. Stops burning Anthropic tokens on every operation.
+  provider: litellm
+  litellm_host: ${LITELLM_HOST:-http://litellm:4000}
+  fallback_provider: anthropic
+
+  # Cost routing: planner + judge → claude-opus-4-6 (real Claude, high stakes)
+  #               coder + critic → qwen2.5-coder-32b (local via litellm, free)
+  #               ghostface intel → claude-haiku-4-5 (cheap, high volume)
   default_model: claude-sonnet-4-6
   high_priority_model: claude-opus-4-6
   low_priority_model: claude-haiku-4-5
+  local_coder_model: ollama/qwen2.5-coder:32b    # served by litellm → ollama
+
+  per_agent_model:
+    spiktor-planner: claude-opus-4-6
+    spiktor-coder:   ollama/qwen2.5-coder:32b
+    spiktor-critic:  ollama/qwen2.5-coder:32b
+    spiktor-judge:   claude-opus-4-6
+    spiktor-ops:     claude-sonnet-4-6
+    ghostface:       claude-haiku-4-5

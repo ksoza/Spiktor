@@ -345,6 +345,77 @@ services:
     networks: [spiktor-net]
 
   # ════════════════════════════════════════════════════════
+  # MEMORY + LLM ROUTING
+  # ════════════════════════════════════════════════════════
+
+  mem0:
+    # ksoza/mem0 — multi-level memory (user/session/agent/long-term)
+    # 90% fewer tokens vs raw vector store, 91% faster recall
+    image: mem0/mem0:latest
+    container_name: spiktor-mem0
+    restart: unless-stopped
+    environment:
+      - MEM0_VECTOR_STORE=qdrant
+      - QDRANT_URL=http://qdrant:6333
+      - MEM0_EMBEDDING_MODEL=text-embedding-3-small
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MEM0_GRAPH_STORE_ENABLED=false
+    ports: ["8765:8765"]
+    depends_on: [qdrant]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [spiktor-net]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: spiktor-qdrant
+    restart: unless-stopped
+    ports: ["6333:6333"]
+    volumes: [qdrant-data:/qdrant/storage]
+    networks: [spiktor-net]
+
+  litellm:
+    # ksoza/litellm — unified LLM proxy
+    # Routes AIOS calls: Claude for planner/judge, local qwen2.5-coder for coder/critic
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: spiktor-litellm
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ELIZA_ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - ./aios-kernel/litellm_config.yml:/app/config.yaml:ro
+    ports: ["4000:4000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    networks: [spiktor-net]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: spiktor-ollama
+    restart: unless-stopped
+    ports: ["11434:11434"]
+    volumes: [ollama-models:/root/.ollama]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [spiktor-net]
+    profiles: ["gpu"]   # only starts with: docker compose --profile gpu up
+
+  # ════════════════════════════════════════════════════════
   # OPS + MONITORING
   # ════════════════════════════════════════════════════════
 
@@ -408,6 +479,8 @@ volumes:
   uptime-data:
   pihole-data:
   pihole-dnsmasq:
+  qdrant-data:
+  ollama-models:
 
 networks:
   spiktor-net:
